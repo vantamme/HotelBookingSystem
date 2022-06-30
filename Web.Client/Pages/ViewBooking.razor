@@ -5,6 +5,8 @@
 @inject NavigationManager NavManager
 @inject ILogger<ViewBooking> Logger
 
+<Alert Message="@_alertMessage" IsVisible="@_alertIsVisible"/>
+
 @if (_loading)
 {
     <div class="spinner"></div>
@@ -105,6 +107,8 @@ else
     private BookingModel? _booking;
     private RoomModel? _room;
     private bool _loading;
+    private string _alertMessage = string.Empty;
+    private bool _alertIsVisible;
 
     protected override async Task OnInitializedAsync()
     {
@@ -135,8 +139,16 @@ else
 
     private async Task Delete()
     {
-       try
+        _alertIsVisible = false;
+        try
         {
+            if(!BookingPolicies.CanBeDeleted(_booking!.CheckIn))
+            {
+                _alertMessage = "Booking can't be deleted! Check in is less than 3 days time.";
+                _alertIsVisible = true;
+                return;
+            }
+
             await BookingService.DeleteBooking(Guid.Parse(Id), Guid.Parse(BookingId));
             NavManager.NavigateTo($"/mybookings");
         }

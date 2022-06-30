@@ -13,10 +13,8 @@ public class BookingService : IBookingService
         _userService = userService;
     }
 
-    public async Task BookRoomAsync(Guid roomId, CreateBookingModel booking)
-    {
+    public async Task BookRoomAsync(Guid roomId, CreateBookingModel booking) => 
         await _client.PostAsJsonAsync(GetPath(roomId), booking);
-    }
 
     public async Task<IEnumerable<BookingModel>> GetUserBookingsAsync(string userName)
     {
@@ -38,15 +36,11 @@ public class BookingService : IBookingService
         return booking;
     }
 
-    public async Task UpdateRoomBooking(Guid roomId, Guid bookingId, EditBookingModel booking)
-    {
+    public async Task UpdateRoomBooking(Guid roomId, Guid bookingId, EditBookingModel booking) => 
         await _client.PutAsJsonAsync(GetPath(roomId, bookingId), booking);
-    }
 
-    public async Task DeleteBooking(Guid roomId, Guid bookingId)
-    {
+    public async Task DeleteBooking(Guid roomId, Guid bookingId) => 
         await _client.DeleteAsync(GetPath(roomId, bookingId));
-    }
 
     private string GetPath(Guid roomId, Guid? bookingId = null) =>
         $"api/rooms/{roomId}/bookings/{bookingId}";
