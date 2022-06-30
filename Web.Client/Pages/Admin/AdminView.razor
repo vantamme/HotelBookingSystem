@@ -1,0 +1,59 @@
+﻿@page "/admin"
+@attribute [Authorize(Roles = "admin")]
+@inject IRoomService RoomService
+@inject ILogger<AdminView> Logger
+
+@if(_rooms == null)
+{
+    <div class="spinner"></div>
+}
+else
+{
+    @if (_rooms.Any())
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Room nr</th>
+                    <th>Capacity</th>
+                    <th>Price (€)</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var room in _rooms)
+                {
+                    <tr>
+                        <td>@room.RoomNr</td>
+                        <td>@room.Capacity</td>
+                        <td>@room.Price</td>
+                        <td><a href="@($"/room/{room.Id}/bookings")" class="btn btn-primary m-1">View Bookings</a>
+                       </td>
+                    </tr>
+                }
+            </tbody>
+    </table>
+    }
+    else
+    {
+        <p>No rooms found!</p>
+    }
+}
+
+@code {
+    public IEnumerable<RoomDto>? _rooms { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _rooms = await RoomService.GetAllRooms();
+
+            await base.OnInitializedAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, ex.Message);
+        }
+    }
+}

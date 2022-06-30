@@ -1,0 +1,94 @@
+﻿@page "/bookroom"
+@attribute [Authorize]
+@inject IRoomService RoomService
+@inject ILogger<BookRoom> Logger
+
+<Alert Message="@_alertMessage" IsVisible="@_alertIsVisible"/>
+<h3>Search for available rooms</h3>
+
+<EditForm Model="_period" OnValidSubmit="LoadAvailableRooms">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="form-group row">
+        <label for="checkIn" class="col-sm-2 col-form-label">
+            Check in
+        </label>
+        <div class="col-sm-10">
+            <InputDate id="checkIn" class="form-control" placeholder="Check in" @bind-Value="_period.CheckIn"/>
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="checkOut" class="col-sm-2 col-form-label">
+            Check in
+        </label>
+        <div class="col-sm-10">
+            <InputDate id="checkOut" class="form-control" placeholder="Check out" @bind-Value="_period.CheckOut"/>
+        </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Search</button>
+</EditForm>
+
+@if(_loading)
+{
+    <div class="spinner"></div>
+}
+else
+{
+    if(_availableRooms.Any())
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Room nr</th>
+                    <th>Capacity</th>
+                    <th>Price (€)</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var room in _availableRooms)
+                {
+                    <tr>
+                        <td>@room.RoomNr</td>
+                        <td>@room.Capacity</td>
+                        <td>@room.Price</td>
+                        <td><a href="@(BookButtonRedirection(room.Id))" class="btn btn-primary m-1">Book</a>
+                       </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code{
+    private BookingPeriod _period = new BookingPeriod();
+    private IEnumerable<RoomModel> _availableRooms = new List<RoomModel>();
+    private bool _loading;
+    private string _alertMessage = string.Empty;
+    private bool _alertIsVisible;
+
+    protected async Task LoadAvailableRooms()
+    {
+        _alertIsVisible = false;
+        try
+        {
+            _loading = true;
+            _availableRooms = await RoomService.GetAvailableRooms(_period);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex.Message, ex);
+            _alertMessage = "Could not load available rooms!";
+            _alertIsVisible = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    protected string BookButtonRedirection(Guid roomId) => 
+        $"/room/{roomId}/booking?checkIn={_period.CheckIn.ToShortDateString()}&checkOut={_period.CheckOut.ToShortDateString()}";
+
+}

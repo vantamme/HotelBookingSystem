@@ -1,0 +1,14 @@
+﻿@if (IsVisible)
+{
+     <div class="alert">
+         @Message
+        <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>       
+     </div>
+}
+
+@code{
+    [Parameter]
+    public bool IsVisible { get; set; }
+    [Parameter]
+    public string Message { get; set; } = default!;
+}

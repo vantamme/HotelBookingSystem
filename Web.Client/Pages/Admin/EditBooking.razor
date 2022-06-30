@@ -1,0 +1,197 @@
+﻿@page "/room/{id}/booking/{bookingId}/edit"
+@attribute [Authorize(Roles = "admin")]
+
+@inject IRoomService RoomService
+@inject IBookingService BookingService
+@inject NavigationManager NavManager
+@inject ILogger<EditBooking> Logger
+@inject IMapper mapper
+
+<Alert IsVisible="@_alertVisible" Message="@_alertMessage"/>
+
+@if (_loading)
+{
+    <div class="spinner"></div>
+}
+else
+{
+    @if(_room == null)
+    {
+        <p>Room with id @Id does not exist</p>
+    }
+    else if(_booking == null){
+        <p>Booking with id @BookingId does not exist</p>
+    }
+    else
+    {
+        <div class="form-group row">
+            <label for="roomNr" class="col-sm-2 col-form-label">
+                Room nr
+            </label>
+            <div class="col-sm-10">
+                <p>@_room.RoomNr</p>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="roomNr" class="col-sm-2 col-form-label">
+                Capacity
+            </label>
+            <div class="col-sm-10">
+                <p>@_room.Capacity</p>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="roomNr" class="col-sm-2 col-form-label">
+                Price (€)
+            </label>
+            <div class="col-sm-10">
+                <p>@_room.Price</p>
+            </div>
+        </div>
+        <EditForm Model="_booking" OnValidSubmit="Edit">
+            <ObjectGraphDataAnnotationsValidator/>
+            <ValidationSummary />
+            <div class="form-group row">
+                <label for="firstName" class="col-sm-2 col-form-label">
+                    First Name
+                </label>
+                <div class="col-sm-10">
+                    <InputText id="firstName" class="form-control" placeholder="First Name" @bind-Value="_booking.Guest.FirstName"/>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="lastName" class="col-sm-2 col-form-label">
+                    Last Name
+                </label>
+                <div class="col-sm-10">
+                    <InputText id="lastName" class="form-control" placeholder="Last Name" @bind-Value="_booking.Guest.LastName"/>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="personalCode" class="col-sm-2 col-form-label">
+                    Personal code
+                </label>
+                <div class="col-sm-10">
+                    <InputNumber id="personalCode" class="form-control" placeholder="Personal code" @bind-Value="_booking.Guest.PersonalCode"/>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="email" class="col-sm-2 col-form-label">
+                    Email
+                </label>
+                <div class="col-sm-10">
+                    <InputText id="email" class="form-control" @bind-Value="_booking.Guest.Email"/>
+                </div>
+            </div>
+            <div class="form-group row">
+            <label for="checkIn" class="col-sm-2 col-form-label">
+                Check in
+            </label>
+            <div class="col-sm-10">
+                <InputDate id="checkIn" class="form-control" @bind-Value="_booking.CheckIn"/>
+            </div>
+            </div>
+            <div class="form-group row">
+                <label for="checkOut" class="col-sm-2 col-form-label">
+                    Check in
+                </label>
+                <div class="col-sm-10">
+                    <InputDate id="checkOut" class="form-control" @bind-Value="_booking.CheckOut"/>
+                </div>
+            </div>
+            <button class="btn btn-primary" type="submit">Edit</button>
+            <button class="btn btn-danger" type="button" @onclick="Delete">Delete</button>
+        </EditForm>
+    }
+}
+
+@code{
+    [Parameter]
+    public string Id { get; set; } = default!;
+    [Parameter]
+    public string BookingId { get; set; } = default!;
+    private EditBookingModel? _booking;
+    private RoomModel? _room;
+    private bool _loading;
+    private bool _alertVisible;
+    private string _alertMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBookingInfo();
+        await base.OnInitializedAsync();
+    }
+
+    private async Task LoadBookingInfo()
+    {
+        _alertVisible = false;
+        try
+        {
+            _loading = true;
+            if (Guid.TryParse(Id, out var roomId))
+                _room = await RoomService.GetRoomAsync(roomId);
+
+            if (Guid.TryParse(BookingId, out var bookingId))
+            {
+                var bookingModel = await BookingService.GetRoomBookingAsync(roomId, bookingId);
+                _booking = mapper.Map<EditBookingModel>(bookingModel);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex.Message, ex);
+            _alertMessage = "Could not load booking info!";
+            _alertVisible = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task Edit()
+    {
+        _alertVisible = false;
+        try
+        {
+            var period = new BookingPeriod
+            {
+                CheckIn = _booking!.CheckIn,
+                CheckOut = _booking!.CheckOut
+            };
+
+            var availableRooms = await RoomService.GetAvailableRooms(period);
+
+            if (availableRooms.Any(r => r.Id == _booking.RoomId))
+            {
+                await BookingService.UpdateRoomBooking(Guid.Parse(Id), Guid.Parse(BookingId), _booking!);
+                NavManager.NavigateTo($"/room/{Id}/bookings");
+            }
+            else
+            {
+                _alertMessage = "Room is not available during this period!";
+                _alertVisible = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex.Message, ex);
+            _alertMessage = "Something went wrong!";
+            _alertVisible = true;
+        }
+    }
+
+    private async Task Delete()
+    {
+        try
+        {
+            await BookingService.DeleteBooking(Guid.Parse(Id), Guid.Parse(BookingId));
+            NavManager.NavigateTo($"/room/{Id}/bookings");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, ex.Message);
+        }
+    }
+}
+

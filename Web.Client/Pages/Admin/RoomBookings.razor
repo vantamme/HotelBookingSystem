@@ -1,0 +1,70 @@
+﻿@page "/room/{id}/bookings"
+@attribute [Authorize]
+@inject IBookingService BookingService
+@inject ILogger<RoomBookings> Logger
+
+@if (_loading)
+{
+    <div class="spinner"></div>
+}
+else
+{
+    @if (_bookings.Any())
+    {
+        <h3>Room bookings</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nr</th>
+                    <th>Check in</th>
+                    <th>Check out</th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var booking in _bookings)
+                {
+                    <tr>
+                        <td>@(_bookings.ToList().IndexOf(booking) + 1)</td>
+                        <td>@booking.CheckIn.ToShortDateString()</td>
+                        <td>@booking.CheckOut.ToShortDateString()</td>
+                        <td>
+                            <a href="@($"/room/{Id}/booking/{booking.Id}/edit")" class="btn btn-primary m-1">View</a>
+                        </td>                    
+                    </tr>
+                }
+            </tbody>
+    </table>
+    }
+    else
+    {
+        <p>Room has no bookings!</p>
+    }
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = default!;
+    private IEnumerable<BookingModel> _bookings { get; set; } = new List<BookingModel>();
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _loading = true;
+            if(Guid.TryParse(Id, out var roomId))
+                _bookings = await BookingService.GetRoomBookingsAsync(roomId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+        }
+        await base.OnInitializedAsync();
+    }
+}

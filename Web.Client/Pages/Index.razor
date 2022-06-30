@@ -1,0 +1,23 @@
+﻿@page "/"
+@inject NavigationManager NavManager
+
+@code{
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authenticationState = await authenticationStateTask;
+        var isAuthenticated = authenticationState.User.Identity!.IsAuthenticated;
+
+        if (!isAuthenticated)
+        {
+            string returnUrl = WebUtility.UrlEncode("/bookroom");
+            NavManager.NavigateTo($"/identity/account/login?returnUrl={returnUrl}");
+        }
+
+        NavManager.NavigateTo("/bookroom");
+
+        await base.OnInitializedAsync();
+    }
+}

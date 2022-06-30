@@ -1,0 +1,148 @@
+﻿@page "/room/{id}/booking/{bookingId}"
+@attribute [Authorize]
+@inject IRoomService RoomService
+@inject IBookingService BookingService
+@inject NavigationManager NavManager
+@inject ILogger<ViewBooking> Logger
+
+@if (_loading)
+{
+    <div class="spinner"></div>
+}
+else
+{
+    if(_room == null)
+    {
+        <p>Room with id @Id does not exist</p>
+    }
+    else if(_booking == null)
+    {
+        <p>Booking with id @BookingId does not exist</p>
+    }
+    else
+    {
+        <div class="form-group row">
+            <label for="roomNr" class="col-sm-2 col-form-label">
+                Room nr
+            </label>
+            <div class="col-sm-10">
+                <p>@_room.RoomNr</p>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="roomNr" class="col-sm-2 col-form-label">
+                Capacity
+            </label>
+            <div class="col-sm-10">
+                <p>@_room.Capacity</p>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="roomNr" class="col-sm-2 col-form-label">
+                Price (€)
+            </label>
+            <div class="col-sm-10">
+                <p>@_room.Price</p>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="firstName" class="col-sm-2 col-form-label">
+                First Name
+            </label>
+            <div class="col-sm-10">
+                <p>@_booking.Guest!.FirstName</p>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="lastName" class="col-sm-2 col-form-label">
+                Last Name
+            </label>
+            <div class="col-sm-10">
+                <p>@_booking.Guest.LastName</p>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="personalCode" class="col-sm-2 col-form-label">
+                Personal code
+            </label>
+            <div class="col-sm-10">
+                <p>@_booking.Guest.PersonalCode</p>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="email" class="col-sm-2 col-form-label">
+                Email
+            </label>
+            <div class="col-sm-10">
+                <p>@_booking.Guest.Email</p>
+            </div>
+        </div>
+        <div class="form-group row">
+        <label for="checkIn" class="col-sm-2 col-form-label">
+            Check in
+        </label>
+        <div class="col-sm-10">
+                <p>@_booking.CheckIn.ToShortDateString()</p>
+        </div>
+        </div>
+        <div class="form-group row">
+            <label for="checkOut" class="col-sm-2 col-form-label">
+                Check in
+            </label>
+            <div class="col-sm-10">
+                <p>@_booking.CheckOut.ToShortDateString()</p>
+            </div>
+        </div>
+        <button class="btn btn-danger" type="button" @onclick="Delete">Delete</button>
+    }    
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = default!;
+    [Parameter]
+    public string BookingId { get; set; } = default!;
+    private BookingModel? _booking;
+    private RoomModel? _room;
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadModels();
+        await base.OnInitializedAsync();
+    }
+
+    private async Task LoadModels()
+    {
+        try
+        {
+            _loading = true;
+            if(Guid.TryParse(Id, out var roomId))
+                _room = await RoomService.GetRoomAsync(roomId);
+
+            if(_room != null && Guid.TryParse(BookingId, out var bookingId))
+                _booking = await BookingService.GetRoomBookingAsync(roomId, bookingId);            
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task Delete()
+    {
+       try
+        {
+            await BookingService.DeleteBooking(Guid.Parse(Id), Guid.Parse(BookingId));
+            NavManager.NavigateTo($"/mybookings");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, ex.Message);
+        }
+    }
+}

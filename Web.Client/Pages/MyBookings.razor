@@ -1,0 +1,59 @@
+﻿@page "/mybookings"
+@attribute [Authorize]
+@inject IBookingService BookingService
+@inject IUserService UserService
+@inject ILogger<MyBookings> Logger
+
+@if (Bookings == null)
+{
+    <div class="spinner"></div>
+}
+else if (Bookings.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nr</th>
+                <th>Check in</th>
+                <th>Check out</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var booking in Bookings)
+            {
+                <tr>
+                    <td>@(Bookings.ToList().IndexOf(booking) + 1)</td>
+                    <td>@booking.CheckIn.ToShortDateString()</td>
+                    <td>@booking.CheckOut.ToShortDateString()</td>
+                    <td><a href="/room/@booking.RoomId/booking/@booking.Id" class="btn btn-primary m-1">View</a>
+                   </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>You don't have any bookings atm.</p>
+}
+
+@code{
+    [Parameter]
+    public IEnumerable<BookingModel>? Bookings { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var email = UserService.GetUsername();
+            Bookings = await BookingService.GetUserBookingsAsync(email);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex.Message, ex);
+        }
+
+        await base.OnInitializedAsync();
+    }
+}
