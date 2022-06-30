@@ -1,7 +1,6 @@
 ﻿using Application.DTOs;
 using Application.Interfaces;
 using AutoMapper;
-using Domain.Entities;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -31,14 +30,6 @@ public class GuestService : IGuestService
             _logger.LogInformation($"Guest with id: {id} doesn't exist in the database.");
             return null;
         }
-        return _mapper.Map<GuestDto>(guest);
-    }
-
-    public async Task<GuestDto> CreateGuest(GuestForCreationDto guestDto)
-    {
-        var guest = _mapper.Map<Guest>(guestDto);
-        _context.Guests.Add(guest);
-        await _context.SaveChangesAsync();
         return _mapper.Map<GuestDto>(guest);
     }
 }
