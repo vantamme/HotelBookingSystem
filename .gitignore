@@ -3,3 +3,8 @@
 ################################################################################
 
 /.vs
+/Application/obj
+/Domain/obj
+/Infrastructure/obj
+/Web.Api/obj
+/Web.Client/obj
